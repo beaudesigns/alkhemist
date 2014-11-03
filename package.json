@@ -1,0 +1,24 @@
+{
+  "name": "alkhemist",
+  "version": "1.0.0",
+  "description": "A simple IRC robot & notification bot for BeauWest.TV",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beaudesigns/alkhemist.git"
+  },
+  "keywords": [
+    "Twitch",
+    "IRC",
+    "bot"
+  ],
+  "author": "Beau West <beau@west.gs> (http://west.gs/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/beaudesigns/alkhemist/issues"
+  },
+  "homepage": "https://github.com/beaudesigns/alkhemist"
+}
