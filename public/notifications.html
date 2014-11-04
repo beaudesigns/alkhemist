@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Alkhemist Notifications</title>
+	<style type="text/css">
+	</style>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="/velocity.min.js"></script>
+	<script>
+		var socket = io.connect('http://localhost');
+		socket.on('connected', function (data) {
+			console.log('we connected');
+		});
+	</script>
+</head>
+<body>
+
+<h1>Hi</h1>
+
+</body>
+</html>
