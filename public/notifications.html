@@ -24,6 +24,11 @@
 
 		text-rendering: optimizeLegibility;
 		-webkit-font-smoothing: antialiased;
+
+		background-color: rgba(0, 0, 0, 0);
+	}
+	::-webkit-scrollbar {
+		visibility: hidden;
 	}
 
 	#initialized {
@@ -216,7 +221,7 @@
 		(function joinLooper() {
 			if (joinEventQueue.length) {
 				var delay = Math.ceil(20000 / joinEventQueue.length);
-				delay = (delay < 300 ? 300 : delay);
+				delay = (delay < 200 ? 200 : delay);
 				delay = (delay > 5000 ? 5000 : delay);
 
 				var viewer = joinEventQueue.shift();
