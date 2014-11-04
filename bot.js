@@ -58,7 +58,7 @@ IrcBot.prototype.bindEvents = function () {
 					following: false,
 					checkFollowing: true
 				};
-				if (record) {
+				if (record && record.joins) {
 					notification.joins = record.joins + 1;
 					notification.minutesWatched = record.minutesWatched;
 					notification.following = record.following;
