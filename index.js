@@ -13,7 +13,8 @@ var fs = require('fs'),
 		filename: path.resolve(__dirname, 'storage.nedb'),
 		autoload: true
 	}),
-	bot = require('./bot.js');
+	IrcBot = require('./bot.js'),
+	Followers = require('./followers.js');
 
 // Get or create the IRC credentials.
 if (fs.existsSync('.credentials')) {
@@ -45,8 +46,21 @@ if (fs.existsSync('.credentials')) {
 		}
 
 		// Initialize the IRC bot.
-		storage.update({watching: true}, {$set: {watching: false}}, function () {
-			bot.initialize(credentials, twitchAPI, storage);
+		storage.update({watching: true}, {$set: {watching: false}}, {multi: true}, function () {
+			var bot = new IrcBot(credentials, twitchAPI, storage);
+			var followers = new Followers(credentials, twitchAPI, storage);
+
+			// Set up the client notification socket.
+			io.on('connection', function (socket) {
+				socket.emit('connected', true);
+
+				bot.on('join', function (data) {
+					socket.emit('join', data);
+				});
+				followers.on('follower', function (data) {
+					socket.emit('follower', data);
+				});
+			});
 		});
 	});
 } else {
@@ -56,18 +70,13 @@ if (fs.existsSync('.credentials')) {
 
 
 // Set up the page listeners.
-server.listen(3000);
+server.listen(11211);
 app
 	.get('/', function (request, response) {
 		response.send('Choose a notification in the ./public folder.');
 	})
 	.use(express.static(__dirname + '/node_modules/velocity-animate'))
 	.use(express.static(__dirname + '/public'));
-
-io.on('connection', function (socket) {
-	socket.emit('connected', true);
-});
-
 
 // Create the IRC Credentials
 function createCredentialsFile() {

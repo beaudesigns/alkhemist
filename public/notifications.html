@@ -1,23 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<title>Alkhemist Notifications</title>
-	<style type="text/css">
-	</style>
+<meta charset="utf-8">
+<title>Alkhemist Notifications</title>
 
-	<script src="/socket.io/socket.io.js"></script>
-	<script src="/velocity.min.js"></script>
-	<script>
-		var socket = io.connect('http://localhost');
-		socket.on('connected', function (data) {
-			console.log('we connected');
+<link href="http://fonts.googleapis.com/css?family=Open+Sans:400,800" rel="stylesheet" type="text/css">
+<style type="text/css">
+	/* @formatter:off*/
+		/* Eric Meyer's Reset CSS v2.0 - http://cssreset.com */
+		html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{border:0;font-size:100%;font:inherit;vertical-align:baseline;margin:0;padding:0}article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:none}table{border-collapse:collapse;border-spacing:0}
+		/* @formatter:on*/
+
+	html {
+		height: 100%;
+	}
+
+	body {
+		position: relative;
+		height: 100%;
+		font-family: 'Open Sans', sans-serif;
+		font-weight: 400;
+		overflow: hidden;
+
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	#initialized {
+		position: absolute;
+		top: 50%;
+		left: 0;
+		right: 0;
+		transform: translateY(-50%);
+		text-align: center;
+		font-weight: 800;
+		font-size: 20px;
+		background-color: #000000;
+		color: #FFFFFF;
+		padding: 20px;
+		display: none;
+	}
+
+	#recent-actions {
+		position: absolute;
+		top: 20px;
+		right: 20px;
+		text-align: right;
+		font-size: 20px;
+		color: #000000;
+	}
+
+	#recent-actions li {
+		transition-property: opacity, background-color;
+		transition-duration: .5s;
+		opacity: 1;
+		font-weight: 800;
+		padding: 1px 5px;
+		color: #FFFFFF;
+	}
+
+	#recent-actions li:nth-child(1) {
+		background-color: #FFFFFF;
+		color: #000000;
+	}
+
+	#recent-actions li:nth-child(2) {
+		opacity: .8;
+	}
+
+	#recent-actions li:nth-child(3) {
+		opacity: .5;
+	}
+
+	#recent-actions li:nth-child(4) {
+		opacity: .3;
+	}
+
+	#recent-actions li:nth-child(5) {
+		opacity: .1;
+	}
+
+	#follower-notification {
+		background-color: #000000;
+		box-sizing: border-box;
+		color: #FFFFFF;
+		display: inline-block;
+		font-size: 18px;
+		height: 60px;
+		left: 0;
+		padding: 12px 15px;
+		position: absolute;
+		right: 0;
+		text-align: center;
+		top: -60px;
+		/*top: 0;*/
+		white-space: nowrap;
+	}
+
+	#follower-notification-wrapper {
+		text-align: left;
+		display: inline-block;
+	}
+
+	#follower-notification-label {
+		color: #888888;
+		display: block;
+		font-size: 14px;
+		margin-bottom: 3px;
+	}
+
+	#join-notification {
+		background-color: #000000;
+		border-top-left-radius: 3px;
+		border-top-right-radius: 3px;
+		bottom: -40px;
+		/*bottom: 0;*/
+		box-sizing: border-box;
+		color: #FFFFFF;
+		display: inline-block;
+		font-size: 14px;
+		height: 40px;
+		left: 20px;
+		padding: 10px 15px;
+		position: absolute;
+		white-space: nowrap;
+	}
+
+	#join-notification.follower #join-notification-following {
+		display: inline;
+	}
+
+	#join-notification-following {
+		display: none;
+		color: #FFE066;
+		margin-left: -3px;
+		margin-right: 3px;
+	}
+
+	#join-notification-username {
+	}
+</style>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/velocity.min.js"></script>
+<script>
+	document.addEventListener('DOMContentLoaded', function () {
+
+		var initialized = document.getElementById('initialized');
+		var recentActions = document.getElementById('recent-actions');
+		var followerNotification = document.getElementById('follower-notification');
+		var followerNotificationUsername = document.getElementById('follower-notification-username');
+		var joinNotification = document.getElementById('join-notification');
+		var joinNotificationUsername = document.getElementById('join-notification-username');
+		var joinEventQueue = [];
+		var followerEventQueue = [];
+
+		var socket = io.connect('http://localhost:11211');
+		socket.on('connected', function () {
+			Velocity(initialized, 'fadeIn', {duration: 500});
+			Velocity(initialized, 'reverse', {duration: 500, delay: 1000}).then(function () {
+				initialized.parentNode.removeChild(initialized);
+			});
 		});
-	</script>
+		socket.on('follower', function (data) {
+			followerEventQueue.push(data);
+		});
+		socket.on('join', function (data) {
+			joinEventQueue.push(data);
+		});
+
+		function addEvent(name, action) {
+			var newChild = document.createElement('li');
+			newChild.appendChild(document.createTextNode(name + ' | ' + action));
+			newChild.style.display = 'none';
+			recentActions.insertBefore(newChild, recentActions.firstChild);
+			Velocity(newChild, 'slideDown', {duration: 300});
+
+			removeOldEvents();
+		}
+
+		function removeOldEvents() {
+			var childCount = recentActions.querySelectorAll('li').length;
+			if (childCount >= 5) {
+				var lastChild = recentActions.querySelector('li:last-child');
+				if (lastChild) {
+					Velocity(lastChild, 'slideUp', {duration: 300}).then(function () {
+						if (lastChild && lastChild.parentNode) {
+							lastChild.parentNode.removeChild(lastChild);
+						}
+						if (childCount >= 5) {
+							removeOldEvents();
+						}
+					});
+				}
+			}
+		}
+
+		// Process the follow queue.
+		(function followLooper() {
+			if (followerEventQueue.length) {
+				var viewer = followerEventQueue.shift();
+				followerNotificationUsername.textContent = viewer.display_name;
+				Velocity(followerNotification, {top: '0'}, {duration: 200});
+				Velocity(followerNotification, 'reverse', {duration: 100, delay: 5000}).then(function () {
+					setTimeout(followLooper, 500);
+
+					addEvent(viewer.name, 'Follow');
+				});
+			} else {
+				setTimeout(followLooper, 1000);
+			}
+		})();
+
+		// Process the join queue.
+		(function joinLooper() {
+			if (joinEventQueue.length) {
+				var delay = Math.ceil(20000 / joinEventQueue.length);
+				delay = (delay < 300 ? 300 : delay);
+				delay = (delay > 5000 ? 5000 : delay);
+
+				var viewer = joinEventQueue.shift();
+				joinNotificationUsername.textContent = viewer.username;
+				if (viewer.following) {
+					joinNotification.classList.add('follower');
+				}
+				Velocity(joinNotification, {bottom: '0'}, {duration: 200});
+				Velocity(joinNotification, 'reverse', {duration: 100, delay: delay}).then(function () {
+					joinNotification.classList.remove('follower');
+					setTimeout(joinLooper, 500);
+
+					addEvent(viewer.username, 'View');
+				});
+			} else {
+				setTimeout(joinLooper, 1000);
+			}
+		})();
+	});
+</script>
 </head>
 <body>
 
-<h1>Hi</h1>
+<div id="initialized">
+	Alkhemist has been initialized.
+</div>
+
+<ul id="recent-actions"></ul>
+
+<div id="follower-notification">
+	<div id="follower-notification-wrapper">
+		<span id="follower-notification-label">New Follower</span>
+		<span id="follower-notification-username">BeauWest</span>, thank you for the support, buddy!
+	</div>
+</div>
+
+<div id="join-notification">
+	<span id="join-notification-following">&#9733;</span>
+	<span id="join-notification-username">BeauWest</span>, thanks for watching!
+</div>
 
 </body>
 </html>
