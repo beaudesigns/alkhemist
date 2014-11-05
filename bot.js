@@ -57,11 +57,13 @@ IrcBot.prototype.bindEvents = function () {
 					following: false,
 					checkFollowing: true
 				};
-				if (record && record.joins) {
-					notification.joins = record.joins + 1;
-					notification.minutesWatched = record.minutesWatched;
-					notification.following = record.following;
-					notification.checkFollowing = (record.followingChecked && ((new Date) - record.followingChecked) < (1000 * 60 * 60 * 24 * 7) ? true : false);
+				if (record) {
+					notification.joins = (record.joins ? record.joins + 1 : notification.joins);
+					notification.minutesWatched = (record.minutesWatched ? record.minutesWatched : notification.minutesWatched);
+					notification.following = (record.following ? record.following : notification.following);
+					if (record.followingChecked && ((new Date) - record.followingChecked) >= (1000 * 60 * 60 * 24 * 7)) {
+						notification.checkFollowing = false;
+					}
 				}
 
 				bot.upsertUser(who, {'joins': true, 'watching': true});
@@ -78,8 +80,6 @@ IrcBot.prototype.bindEvents = function () {
 						bot.emit('join', notification);
 					});
 				} else {
-					bot.upsertUser(notification.username, {'joins': true, 'watching': true});
-
 					console.log('JOIN: ' + who + ' – ' + notification.joins + ' joins – ' + notification.minutesWatched + ' minutes watched.' + (notification.following ? '' : ' – "Remember to follow!"'));
 					bot.emit('join', notification);
 				}
