@@ -27,6 +27,7 @@
 
 		background-color: rgba(0, 0, 0, 0);
 	}
+
 	::-webkit-scrollbar {
 		visibility: hidden;
 	}
@@ -40,7 +41,7 @@
 		text-align: center;
 		font-weight: 800;
 		font-size: 20px;
-		background-color: #000000;
+		background-color: rgba(0, 0, 0, .8);
 		color: #FFFFFF;
 		padding: 20px;
 		display: none;
@@ -56,7 +57,7 @@
 	}
 
 	#recent-actions li {
-		transition-property: opacity, background-color;
+		transition-property: color, opacity, background-color;
 		transition-duration: .5s;
 		opacity: 1;
 		font-weight: 800;
@@ -71,22 +72,38 @@
 
 	#recent-actions li:nth-child(2) {
 		opacity: .8;
+		color: #FFFFFF;
+		-webkit-text-fill-color: #FFFFFF;
+		-webkit-text-stroke-width: 1px;
+		-webkit-text-stroke-color: #000000;
 	}
 
 	#recent-actions li:nth-child(3) {
 		opacity: .5;
+		color: #FFFFFF;
+		-webkit-text-fill-color: #FFFFFF;
+		-webkit-text-stroke-width: 1px;
+		-webkit-text-stroke-color: #000000;
 	}
 
 	#recent-actions li:nth-child(4) {
 		opacity: .3;
+		color: #FFFFFF;
+		-webkit-text-fill-color: #FFFFFF;
+		-webkit-text-stroke-width: 1px;
+		-webkit-text-stroke-color: #000000;
 	}
 
 	#recent-actions li:nth-child(5) {
 		opacity: .1;
+		color: #FFFFFF;
+		-webkit-text-fill-color: #FFFFFF;
+		-webkit-text-stroke-width: 1px;
+		-webkit-text-stroke-color: #000000;
 	}
 
 	#follower-notification {
-		background-color: #000000;
+		background-color: rgba(0, 0, 0, .8);
 		box-sizing: border-box;
 		color: #FFFFFF;
 		display: inline-block;
@@ -175,8 +192,18 @@
 		});
 
 		function addEvent(name, action) {
+			var eventText = name + ' | ' + action;
+
+			// Make sure the same event isn't already there.
+			var existingActions = recentActions.querySelectorAll('li');
+			for (var i = 0; i < existingActions.length; ++i) {
+				if (existingActions[i].textContent == eventText) {
+					return;
+				}
+			}
+
 			var newChild = document.createElement('li');
-			newChild.appendChild(document.createTextNode(name + ' | ' + action));
+			newChild.appendChild(document.createTextNode(eventText));
 			newChild.style.display = 'none';
 			recentActions.insertBefore(newChild, recentActions.firstChild);
 			Velocity(newChild, 'slideDown', {duration: 300});
