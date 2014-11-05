@@ -2,6 +2,8 @@ var util = require('util'),
 	EventEmitter = require('events').EventEmitter;
 
 function Followers(credentials, twitchAPI, storage) {
+	this.mostRecent = null;
+
 	this.credentials = credentials;
 	this.twitchAPI = twitchAPI;
 	this.storage = storage;
@@ -17,25 +19,28 @@ Followers.prototype.checkFollowers = function () {
 
 	bot.twitchAPI.getFollowersOf(bot.credentials.channel, function (error, response) {
 		if (response && response.follows) {
-			for (var i = 0; i < response.follows.length; i++) {
-				bot.checkUser(response.follows[i].user);
+			if (bot.mostRecent === null) {
+				bot.mostRecent = new Date(response.follows[0].created_at);
 			}
+			var newMostRecent = null;
+			for (var i = 0; i < response.follows.length; i++) {
+				var followedAt = new Date(response.follows[i].created_at);
+
+				if (followedAt > bot.mostRecent) {
+					bot.newFollower(response.follows[i].user);
+					newMostRecent = (followedAt > newMostRecent ? followedAt : newMostRecent);
+				}
+			}
+			bot.mostRecent = (newMostRecent ? newMostRecent : bot.mostRecent);
 		}
 	});
 };
 
 
-Followers.prototype.checkUser = function (user) {
-	var bot = this;
-
-	bot.storage.findOne({'_id': user.name}, function (error, record) {
-		if (!record || !record.following) {
-			bot.upsertUser(user.name, {'following': true});
-			bot.emit('follower', user);
-
-			console.log('\nNEW FOLLOW: ' + user.display_name + '\n');
-		}
-	});
+Followers.prototype.newFollower = function (user) {
+	this.upsertUser(user.name, {'following': true});
+	this.emit('follower', user);
+	console.log('\nNEW FOLLOW: ' + user.display_name);
 };
 
 
