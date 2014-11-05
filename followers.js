@@ -16,8 +16,10 @@ Followers.prototype.checkFollowers = function () {
 	var bot = this;
 
 	bot.twitchAPI.getFollowersOf(bot.credentials.channel, function (error, response) {
-		for (var i = 0; i < response.follows.length; i++) {
-			bot.checkUser(response.follows[i].user);
+		if (response && response.follows) {
+			for (var i = 0; i < response.follows.length; i++) {
+				bot.checkUser(response.follows[i].user);
+			}
 		}
 	});
 };

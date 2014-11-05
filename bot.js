@@ -31,7 +31,6 @@ IrcBot.prototype.everyMinute = function () {
 	var bot = this;
 	bot.twitchAPI.getStream(bot.credentials.channel, function (error, response) {
 		if (response.stream) {
-			console.log('UPDATE: Minutes + 1');
 			bot.storage.update({watching: true}, {$inc: {minutesWatched: 1}}, {multi: true});
 		}
 	});
