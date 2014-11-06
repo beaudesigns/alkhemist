@@ -131,6 +131,34 @@
 		margin-bottom: 3px;
 	}
 
+	#tip-notification {
+		background-color: rgba(25, 41, 64, .8);
+		box-sizing: border-box;
+		color: #FFFFFF;
+		display: inline-block;
+		font-size: 18px;
+		height: 60px;
+		left: 0;
+		padding: 12px 15px;
+		position: absolute;
+		right: 0;
+		text-align: center;
+		top: -60px;
+		/*top: 0;*/
+		white-space: nowrap;
+	}
+
+	#tip-notification-message {
+		display: block;
+		color: #CCCCCC;
+		font-size: 16px;
+		margin-top: 2px;
+	}
+
+	#tip-notification-message::before, #tip-notification-message::after {
+		content: '"';
+	}
+
 	#join-notification {
 		background-color: #000000;
 		border-top-left-radius: 3px;
@@ -167,18 +195,13 @@
 <script src="/velocity.min.js"></script>
 <script>
 	document.addEventListener('DOMContentLoaded', function () {
-
-		var initialized = document.getElementById('initialized');
-		var recentActions = document.getElementById('recent-actions');
-		var followerNotification = document.getElementById('follower-notification');
-		var followerNotificationUsername = document.getElementById('follower-notification-username');
-		var joinNotification = document.getElementById('join-notification');
-		var joinNotificationUsername = document.getElementById('join-notification-username');
 		var joinEventQueue = [];
 		var followerEventQueue = [];
+		var tipEventQueue = [];
 
 		var socket = io.connect('http://localhost:11211');
 		socket.on('connected', function () {
+			var initialized = document.getElementById('initialized');
 			Velocity(initialized, 'fadeIn', {duration: 500});
 			Velocity(initialized, 'reverse', {duration: 500, delay: 1000}).then(function () {
 				initialized.parentNode.removeChild(initialized);
@@ -190,15 +213,22 @@
 		socket.on('join', function (data) {
 			joinEventQueue.push(data);
 		});
+		socket.on('tip', function (data) {
+			tipEventQueue.push(data);
+		});
 
-		function addEvent(name, action) {
+		var recentActions = document.getElementById('recent-actions');
+
+		function addEvent(name, action, allowDuplicates) {
 			var eventText = name + ' | ' + action;
 
 			// Make sure the same event isn't already there.
-			var existingActions = recentActions.querySelectorAll('li');
-			for (var i = 0; i < existingActions.length; ++i) {
-				if (existingActions[i].textContent == eventText) {
-					return;
+			if (!allowDuplicates) {
+				var existingActions = recentActions.querySelectorAll('li');
+				for (var i = 0; i < existingActions.length; ++i) {
+					if (existingActions[i].textContent == eventText) {
+						return;
+					}
 				}
 			}
 
@@ -230,6 +260,9 @@
 
 		// Process the follow queue.
 		(function followLooper() {
+			var followerNotification = document.getElementById('follower-notification');
+			var followerNotificationUsername = document.getElementById('follower-notification-username');
+
 			if (followerEventQueue.length) {
 				var viewer = followerEventQueue.shift();
 				followerNotificationUsername.textContent = viewer.display_name;
@@ -246,6 +279,9 @@
 
 		// Process the join queue.
 		(function joinLooper() {
+			var joinNotification = document.getElementById('join-notification');
+			var joinNotificationUsername = document.getElementById('join-notification-username');
+
 			if (joinEventQueue.length) {
 				var delay = Math.ceil(20000 / joinEventQueue.length);
 				delay = (delay < 200 ? 200 : delay);
@@ -267,6 +303,29 @@
 				setTimeout(joinLooper, 1000);
 			}
 		})();
+
+		// Process the tip queue.
+		(function tipLooper() {
+			var tipNotification = document.getElementById('tip-notification');
+			var tipNotificationUsername = document.getElementById('tip-notification-username');
+			var tipNotificationAmount = document.getElementById('tip-notification-amount');
+			var tipNotificationMessage = document.getElementById('tip-notification-message');
+
+			if (tipEventQueue.length) {
+				var tip = tipEventQueue.shift();
+				tipNotificationUsername.textContent = tip.username;
+				tipNotificationAmount.textContent = tip.currencySymbol + tip.amount;
+				tipNotificationMessage.textContent = tip.note;
+				Velocity(tipNotification, {top: '0'}, {duration: 200});
+				Velocity(tipNotification, 'reverse', {duration: 100, delay: 5000}).then(function () {
+					setTimeout(tipLooper, 500);
+
+					addEvent(tip.username, tip.currencySymbol + tip.amount, true);
+				});
+			} else {
+				setTimeout(tipLooper, 1000);
+			}
+		})();
 	});
 </script>
 </head>
@@ -283,6 +342,12 @@
 		<span id="follower-notification-label">New Follower</span>
 		<span id="follower-notification-username">BeauWest</span>, thank you for the support, buddy!
 	</div>
+</div>
+
+<div id="tip-notification">
+	<span id="tip-notification-username">BeauWest</span> just donated
+	<span id="tip-notification-amount">$0.00</span>!
+	<span id="tip-notification-message">Thank you so much for the support!</span>
 </div>
 
 <div id="join-notification">

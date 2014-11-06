@@ -6,6 +6,7 @@ var fs = require('fs'),
 	app = express(),
 	server = require('http').Server(app),
 	io = require('socket.io')(server),
+	ioClient = require('socket.io-client'),
 
 	Twitchy = require('twitchy'),
 	Datastore = require('nedb'),
@@ -50,6 +51,25 @@ if (fs.existsSync('.credentials')) {
 			var bot = new IrcBot(credentials, twitchAPI, storage);
 			var followers = new Followers(credentials, twitchAPI, storage);
 
+			// Connect to StreamTip
+			if (credentials.streamtip_client_id && credentials.streamtip_client_access_token) {
+				var streamTip = ioClient.connect('https://streamtip.com', {
+					query: 'client_id=' + encodeURIComponent(credentials.streamtip_client_id) + '&access_token=' + encodeURIComponent(credentials.streamtip_client_access_token)
+				});
+				streamTip
+					.on('authenticated', function () {
+						console.log('Connected to StreamTip.');
+					})
+					.on('error', function (err) {
+						if (err === '401::Access Denied::') {
+							console.log('StreamTip authentication failed.');
+						}
+					})
+					.on('newTip', function (data) {
+						console.log('\nNEW TIP: ' + data.username + ' – ' + data.currencySymbol + data.amount + '– "' + data.note + '"');
+					});
+			}
+
 			// Set up the client notification socket.
 			io.on('connection', function (socket) {
 				socket.emit('connected', true);
@@ -60,6 +80,12 @@ if (fs.existsSync('.credentials')) {
 				followers.on('follower', function (data) {
 					socket.emit('follower', data);
 				});
+
+				if (streamTip) {
+					streamTip.on('newTip', function (data) {
+						socket.emit('tip', data);
+					});
+				}
 			});
 		});
 	});
@@ -103,6 +129,14 @@ function createCredentialsFile() {
 			client_secret: {
 				description: 'Twitch API Client Secret',
 				required: true
+			},
+			streamtip_client_id: {
+				description: 'StreamTip API Client ID',
+				required: false
+			},
+			streamtip_client_access_token: {
+				description: 'StreamTip API Client Access Token',
+				required: false
 			}
 		}
 	}, function (err, result) {
