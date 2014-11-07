@@ -90,13 +90,13 @@ IrcBot.prototype.bindEvents = function () {
 			bot.upsertUser(who, {'watching': false});
 		})
 
-		.addListener('names', function (channel, names) {
-			for (var key in names) {
-				if (names.hasOwnProperty(key)) {
-					this.emit('join', channel, key);
-				}
-			}
-		})
+		//.addListener('names', function (channel, names) {
+		//	for (var key in names) {
+		//		if (names.hasOwnProperty(key)) {
+		//			this.emit('join', channel, key);
+		//		}
+		//	}
+		//})
 		.addListener('message', function (from, to, message) {
 			bot.upsertUser(from, {'messages': true});
 		});

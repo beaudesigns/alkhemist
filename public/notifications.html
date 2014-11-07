@@ -32,6 +32,21 @@
 		visibility: hidden;
 	}
 
+	#disconnected {
+		position: absolute;
+		top: 50%;
+		left: 0;
+		right: 0;
+		transform: translateY(-50%);
+		text-align: center;
+		font-weight: 800;
+		font-size: 20px;
+		background-color: rgba(145, 17, 8, .8);
+		color: #FFFFFF;
+		padding: 20px;
+		display: none;
+	}
+
 	#initialized {
 		position: absolute;
 		top: 50%;
@@ -191,21 +206,37 @@
 	}
 </style>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="/velocity.min.js"></script>
+<script src="../node_modules/socket.io-client/socket.io.js"></script>
+<script src="../node_modules/velocity-animate/velocity.min.js"></script>
 <script>
 	document.addEventListener('DOMContentLoaded', function () {
 		var joinEventQueue = [];
 		var followerEventQueue = [];
 		var tipEventQueue = [];
 
-		var socket = io.connect('http://localhost:11211');
+		var socket = io.connect('http://localhost:11211', {
+			reconnection: true,
+			reconnectionDelay: 1000,
+			reconnectionDelayMax: 1000,
+			timeout: false
+		});
+
+		// Process the follow queue.
+		var initialized = document.getElementById('disconnected');
+		(function connectedLooper() {
+			if (!socket.connected && initialized.offsetWidth === 0 && initialized.offsetHeight === 0) {
+				Velocity(initialized, 'fadeIn', {duration: 500});
+			}
+			if (socket.connected && initialized.offsetWidth > 0 && initialized.offsetHeight > 0) {
+				Velocity(initialized, 'fadeOut', {duration: 500});
+			}
+			setTimeout(connectedLooper, 1000);
+		})();
+
 		socket.on('connected', function () {
 			var initialized = document.getElementById('initialized');
 			Velocity(initialized, 'fadeIn', {duration: 500});
-			Velocity(initialized, 'reverse', {duration: 500, delay: 1000}).then(function () {
-				initialized.parentNode.removeChild(initialized);
-			});
+			Velocity(initialized, 'reverse', {duration: 500, delay: 1000});
 		});
 		socket.on('follower', function (data) {
 			followerEventQueue.push(data);
@@ -259,10 +290,9 @@
 		}
 
 		// Process the follow queue.
+		var followerNotification = document.getElementById('follower-notification');
+		var followerNotificationUsername = document.getElementById('follower-notification-username');
 		(function followLooper() {
-			var followerNotification = document.getElementById('follower-notification');
-			var followerNotificationUsername = document.getElementById('follower-notification-username');
-
 			if (followerEventQueue.length) {
 				var viewer = followerEventQueue.shift();
 				followerNotificationUsername.textContent = viewer.display_name;
@@ -278,10 +308,9 @@
 		})();
 
 		// Process the join queue.
+		var joinNotification = document.getElementById('join-notification');
+		var joinNotificationUsername = document.getElementById('join-notification-username');
 		(function joinLooper() {
-			var joinNotification = document.getElementById('join-notification');
-			var joinNotificationUsername = document.getElementById('join-notification-username');
-
 			if (joinEventQueue.length) {
 				var delay = Math.ceil(20000 / joinEventQueue.length);
 				delay = (delay < 200 ? 200 : delay);
@@ -305,12 +334,11 @@
 		})();
 
 		// Process the tip queue.
+		var tipNotification = document.getElementById('tip-notification');
+		var tipNotificationUsername = document.getElementById('tip-notification-username');
+		var tipNotificationAmount = document.getElementById('tip-notification-amount');
+		var tipNotificationMessage = document.getElementById('tip-notification-message');
 		(function tipLooper() {
-			var tipNotification = document.getElementById('tip-notification');
-			var tipNotificationUsername = document.getElementById('tip-notification-username');
-			var tipNotificationAmount = document.getElementById('tip-notification-amount');
-			var tipNotificationMessage = document.getElementById('tip-notification-message');
-
 			if (tipEventQueue.length) {
 				var tip = tipEventQueue.shift();
 				tipNotificationUsername.textContent = tip.username;
@@ -331,9 +359,9 @@
 </head>
 <body>
 
-<div id="initialized">
-	Alkhemist has been initialized.
-</div>
+
+<div id="disconnected">Alkhemist is not connected.</div>
+<div id="initialized">Alkhemist has been initialized.</div>
 
 <ul id="recent-actions"></ul>
 
