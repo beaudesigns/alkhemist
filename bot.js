@@ -30,7 +30,7 @@ util.inherits(IrcBot, EventEmitter);
 IrcBot.prototype.everyMinute = function () {
 	var bot = this;
 	bot.twitchAPI.getStream(bot.credentials.channel, function (error, response) {
-		if (response.stream) {
+		if (response && response.stream) {
 			bot.storage.update({watching: true}, {$inc: {minutesWatched: 1}}, {multi: true});
 		}
 	});
